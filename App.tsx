@@ -3,7 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Camera } from 'expo-camera';
 import React, { useState, useEffect, useRef } from 'react';
 import { Text, View, TouchableOpacity, StyleSheet, Image, Dimensions, Button } from 'react-native';
-import TakePhoto from './.expo/components/TakePhoto';
+import TakePhoto from './components/TakePhoto';
 
 const {width, height} = Dimensions.get("window")
 
