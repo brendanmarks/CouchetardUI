@@ -191,7 +191,7 @@ export default function TakePhoto(props) {
           <View style={styles.photo}>
             <Card style={{marginTop: 50, alignSelf: 'center', width: '100%', height: '100%'}}>
               <Card.Cover style={{alignSelf: 'center', width: '75%', height: '75%'}} resizeMode={'contain'} source={photo} />
-              <Card.Title title={topItem}/>
+              <Card.Title titleStyle={{alignSelf: 'center'}} title={topItem}/>
               <Card.Actions style={{alignSelf: 'center'}}>
                 <Button onPress={() => {setSnackVisible(true);}}><Text style={{fontWeight: "bold"}}>Confirm</Text></Button>
                 <Button onPress={() => {setPopupVisible(true);}}>Wrong Item?</Button>
