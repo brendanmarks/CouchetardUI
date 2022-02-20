@@ -1,18 +1,19 @@
 import { StatusBar } from 'expo-status-bar';
 import { Camera } from 'expo-camera';
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, Image, Dimensions, Button, Alert } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet, Image, Dimensions, Alert } from 'react-native';
 // import { MobileModel, ImageUtil } from 'react-native-pytorch-core';
 import * as tf from '@tensorflow/tfjs';
 import { fetch, decodeJpeg, bundleResourceIO } from '@tensorflow/tfjs-react-native';
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
+import { Button, Card, Snackbar, Modal, RadioButton, TouchableRipple } from 'react-native-paper';
 
 // const model = require('../assets/models/model_best_resnet.ptl');
 const image_classes = require('../assets/data/class2labels.json');
 
 // Get reference to bundled model assets 
 const modelJson = require('../assets/model/model.json');
-const modelWeights = require('../assets/model/group1-shard1of1.bin');
+const modelWeights = require('../assets/model/group1-shard1of1_quantized.bin');
 
 
 export default function TakePhoto(props) {
@@ -20,6 +21,11 @@ export default function TakePhoto(props) {
   const [cameraRef, setCameraRef] = useState(null);
   const [type, setType] = useState(Camera.Constants.Type.back);
   const [photo, setPhoto] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [topClasses, setTopClasses] = useState(null);
+  const [topItem, setTopItem] = useState(null);
+  const [snackVisible, setSnackVisible] = useState(false);
+  const [popupVisible, setPopupVisible] = useState(false);
 
   useEffect(() => {
       (async () => {
@@ -89,7 +95,7 @@ export default function TakePhoto(props) {
       ],
       { compress: 1, format: SaveFormat.JPEG }
     );
-    setPhoto(manipResult);
+    // setPhoto(manipResult);
     return manipResult;
   }
   
@@ -112,9 +118,16 @@ export default function TakePhoto(props) {
       // console.log(`kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`);
       // const model = await tf.loadGraphModel(bundleResourceIO(modelJson, modelWeights));
       const preds = props.model.predict(transformedImg) as tf.Tensor
-      const pred = await preds.argMax(1).array()
-      Alert.alert('prediction class:', image_classes[pred.toString()])
-      // console.log(pred)
+      const {values, indices} = tf.topk(preds, 5, true);
+      var scoreValues = (await values.array()).toString().split(",");
+      var topIndices = (await indices.array()).toString().split(",");
+      var topCs = [];
+      for (var i = 0; i < topIndices.length; i++) {
+        topCs.push(image_classes[topIndices[i]]);
+      }
+      setTopClasses(topCs);
+      setTopItem(topCs[0]);
+      setSubmitted(true);
       // transformedImg.print(true)
       
     } catch(exception){
@@ -147,9 +160,6 @@ export default function TakePhoto(props) {
               }}>
               <Text style={{ fontSize: 18, marginBottom: 10, color: 'white' }}> Flip </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.textCommand} onPress={props.goBackHandler}>
-              <Text style={{ fontSize: 18, marginBottom: 10, color: 'white' }}> Close </Text>
-            </TouchableOpacity>
             <TouchableOpacity style={{alignSelf: 'center'}} onPress={async() => {
               if(cameraRef){
                 let p = await cameraRef.takePictureAsync();
@@ -165,11 +175,55 @@ export default function TakePhoto(props) {
         </Camera>
         : null }
         {
-          (photo != null) ?
+          (photo != null && !submitted) ?
           <View style={styles.photo}>
-            <Image style={{flex:1, width: '100%', height: '100%'}} resizeMode={'contain'} source={photo}></Image>
-            <Button onPress={() => setPhoto(null)} title="Retake"></Button>
-            <Button onPress={classifyImage} title="Submit"></Button>
+            <Card style={{marginTop: 100, alignSelf: 'center', width: '100%', height: '100%'}}>
+              <Card.Cover style={{alignSelf: 'center', width: '75%', height: '75%'}} resizeMode={'contain'} source={photo} />
+              <Card.Actions style={{alignSelf: 'center'}}>
+                <Button onPress={classifyImage}><Text style={{fontWeight: "bold"}}>Submit</Text></Button>
+                <Button onPress={() => setPhoto(null)}>Retake</Button>
+              </Card.Actions>
+            </Card>
+          </View> : null
+        }
+        {
+          (photo != null && submitted) ?
+          <View style={styles.photo}>
+            <Card style={{marginTop: 50, alignSelf: 'center', width: '100%', height: '100%'}}>
+              <Card.Cover style={{alignSelf: 'center', width: '75%', height: '75%'}} resizeMode={'contain'} source={photo} />
+              <Card.Title title={topItem}/>
+              <Card.Actions style={{alignSelf: 'center'}}>
+                <Button onPress={() => {setSnackVisible(true);}}><Text style={{fontWeight: "bold"}}>Confirm</Text></Button>
+                <Button onPress={() => {setPopupVisible(true);}}>Wrong Item?</Button>
+              </Card.Actions>
+            </Card>
+            <Modal visible={popupVisible} onDismiss={() => {setPopupVisible(false);}} contentContainerStyle={{alignSelf: 'center', width: "90%", backgroundColor: 'white', padding: 20}}>
+              {topClasses.map((c) => (
+                <TouchableRipple onPress={() => setTopItem(c)}>
+                  <View style={{ flexDirection: 'row', alignContent: 'center' }}>
+                      <View style={{ flex: 7, alignSelf: 'center' }}>
+                        <Text>{c}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <RadioButton value={c} status={c === topItem ? 'checked' : 'unchecked'} onPress={() => setTopItem(c)}/>
+                      </View>
+                  </View>
+                </TouchableRipple>             
+                ))}
+            </Modal>
+            <Snackbar
+              visible={snackVisible}
+              onDismiss={() => {setSnackVisible(false); }}
+              action={{
+                label: 'Close',
+                onPress: () => {
+                  setSnackVisible(true);
+                },
+              }}
+              duration={2000}
+              >
+              Item Added To Cart!
+            </Snackbar>
           </View> : null
         }
       </View>
@@ -205,6 +259,7 @@ export default function TakePhoto(props) {
   },
   photo: {
     flex: 1,
-    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center'
   }
   });

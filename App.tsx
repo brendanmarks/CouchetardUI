@@ -2,10 +2,11 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Camera } from 'expo-camera';
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, Image, Dimensions, Button, Alert } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet, Image, Dimensions, Alert } from 'react-native';
 import TakePhoto from './components/TakePhoto';
 import * as tf from '@tensorflow/tfjs';
 import { bundleResourceIO } from '@tensorflow/tfjs-react-native';
+import { Appbar, Button } from 'react-native-paper';
 
 const {width, height} = Dimensions.get("window")
 
@@ -16,15 +17,13 @@ const modelWeights = require('./assets/model/group1-shard1of1_quantized.bin');
 export default function App() {
   const [usingCamera, setUsingCamera] = useState(null);
   const [model, setModel] = useState(null);
-  const goBackHandler = () => {
-    setUsingCamera(!usingCamera);
-  }
+  
   const loadModel = async (src) => {
     try {
       // For graph model
       const model = await tf.loadGraphModel(src);
       setModel(model);
-      Alert.alert('Model', `Load model success`)
+      // Alert.alert('Model', `Load model success`)
     } catch (err) {
         console.log(err);
     }
@@ -42,17 +41,31 @@ export default function App() {
 
     return (
       <View style={{ flex: 1 }}>
+        
         { (usingCamera) ?
-          <TakePhoto goBackHandler={goBackHandler} model={model}/> : null
+        <View style={{ flex: 1 }}>
+          <Appbar.Header>
+            <Appbar.BackAction onPress={() => {setUsingCamera(!usingCamera);}} />
+            <Appbar.Content title="Couchetard" subtitle={'Visual Product Search'} />
+          </Appbar.Header>
+          <TakePhoto model={model}/>
+          </View>
+          : null
         }
         { (!usingCamera) ?
-          <View style={styles.button}>
-            <Text style={{fontWeight: 'bold', fontSize: 50, textAlign: 'center'}}> Couchetard Visual Product Search </Text>
-            {/* <View style={styles.button}> */}
-              <Button onPress={() => setUsingCamera(true)} disabled={model == null} title="Take Picture"></Button>
-            {/* </View> */}
+          <View style={{ flex: 1 }}>
+            <Appbar.Header>
+              <Appbar.Content title="Couchetard" subtitle={'Visual Product Search'} />
+            </Appbar.Header>
+            <View style={styles.button}>
+            <Image style={{height: '50%', width: '75%', resizeMode : 'contain'}} source={require('./assets/CoucheTardLogo.svg.png')}></Image>
+              <Button style={{marginTop: 20}} icon="camera" mode="contained" disabled={model==null} onPress={() => setUsingCamera(true)}>
+                Search Item
+              </Button>
+          </View>
           </View> : null
         }
+
       </View>
     );
   }
@@ -61,6 +74,5 @@ export default function App() {
       flexDirection: "column",
       justifyContent: 'center',
       alignItems: "center",
-      flex: 1
     }
   });
