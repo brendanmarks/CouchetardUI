@@ -6,10 +6,12 @@ import { Text, View, TouchableOpacity, StyleSheet, Image, Dimensions, Alert } fr
 import * as tf from '@tensorflow/tfjs';
 import { fetch, decodeJpeg, bundleResourceIO } from '@tensorflow/tfjs-react-native';
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
-import { Button, Card, Snackbar, Modal, RadioButton, TouchableRipple } from 'react-native-paper';
+import { Button, Card, Snackbar, Modal, RadioButton, TouchableRipple, Title, DataTable,ProgressBar,Colors  } from 'react-native-paper';
 
 // const model = require('../assets/models/model_best_resnet.ptl');
 const image_classes = require('../assets/data/class2labels.json');
+const products = require('../assets/data/productsA.json');
+const productsIndex = require('../assets/data/productsToIndex.json');
 
 // Get reference to bundled model assets 
 const modelJson = require('../assets/model/model.json');
@@ -26,6 +28,36 @@ export default function TakePhoto(props) {
   const [topItem, setTopItem] = useState(null);
   const [snackVisible, setSnackVisible] = useState(false);
   const [popupVisible, setPopupVisible] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [productName, setProductName] = useState(null);
+  const [productPrice, setProductPrice] = useState(null);
+  const [productNF, setProductNF] = useState(null);
+  const [productPF, setProductPF] = useState(null);
+  const [PopupTableVisible, setPopupTableVisible] = useState(null);
+
+  const parseJson = () => {
+
+    const pIndex = productsIndex[topItem]
+    
+    //console.log(products[pIndex][1]["Product Name"])
+    //console.log(products[pIndex][1]["Price CAD"])
+    //console.log(products[pIndex][2].NF)
+    //console.log(products[pIndex][3].PF)
+    
+    setProductName(products[pIndex][1]["Product Name"])
+    setProductPrice(products[pIndex][1]["Price CAD"])
+    setProductNF(products[pIndex][2].NF)
+    setProductPF(products[pIndex][3].PF)
+  }
+
+  const displayNutritionalFacts = () => {
+    return (
+      <View>
+        <Title>HELOOOOOOOOOO</Title>
+      </View>
+    )
+      
+  }
 
   useEffect(() => {
       (async () => {
@@ -187,13 +219,13 @@ export default function TakePhoto(props) {
           </View> : null
         }
         {
-          (photo != null && submitted) ?
+          (photo != null && submitted && !confirmed) ?
           <View style={styles.photo}>
             <Card style={{marginTop: 50, alignSelf: 'center', width: '100%', height: '100%'}}>
               <Card.Cover style={{alignSelf: 'center', width: '75%', height: '75%'}} resizeMode={'contain'} source={photo} />
               <Card.Title titleStyle={{alignSelf: 'center'}} title={topItem}/>
               <Card.Actions style={{alignSelf: 'center'}}>
-                <Button onPress={() => {setSnackVisible(true);}}><Text style={{fontWeight: "bold"}}>Confirm</Text></Button>
+                <Button onPress={() => {setSnackVisible(true); setConfirmed(true); parseJson()}}><Text style={{fontWeight: "bold"}}>Confirm</Text></Button>
                 <Button onPress={() => {setPopupVisible(true);}}>Wrong Item?</Button>
               </Card.Actions>
             </Card>
@@ -224,6 +256,69 @@ export default function TakePhoto(props) {
               >
               Item Added To Cart!
             </Snackbar>
+          </View> : null
+        }
+        {
+          (photo != null && submitted && confirmed) ?
+          <View style={styles.productDetails}>
+            <Title>{productName} </Title>
+            <Title>Product Price : {productPrice} $</Title>
+            <Card style={{marginTop:30 , alignSelf: 'center', width: '75%', height: '30%'}}>
+            <Card.Cover style={{alignSelf: 'center', width: '100%', height: '100%'}} resizeMode={'contain'} source={photo} />
+            </Card>
+            <Button onPress={() => {setPopupTableVisible(true);}}>Display Nutrtitional Facts</Button>
+            <Modal visible={PopupTableVisible} onDismiss={() => {setPopupTableVisible(false);}} contentContainerStyle={{alignSelf: 'center', width: "90%", backgroundColor: 'white', padding: 20}}>
+              
+              <DataTable>
+                <DataTable.Header>
+                  <DataTable.Title>Nutritional Fact</DataTable.Title>
+                  <DataTable.Title numeric> </DataTable.Title>
+                  <DataTable.Title numeric>Daily %</DataTable.Title>
+                </DataTable.Header>
+
+                <DataTable.Row>
+                  <DataTable.Cell>Calories </DataTable.Cell>
+                  <DataTable.Cell numeric> {productNF["Total Energy Amount (in kilocalories)"]} </DataTable.Cell>
+                  <DataTable.Cell numeric> - </DataTable.Cell>
+                </DataTable.Row>
+
+                <DataTable.Row>
+                  <DataTable.Cell>Total Carbs</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Total Carbohydrates (Fibre + Sugars) (in g)"]} g</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Carbohydrate DV (in %)"]} %</DataTable.Cell>
+                </DataTable.Row>
+
+                <DataTable.Row>
+                  <DataTable.Cell>Protein</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Protein (in g)"]} g</DataTable.Cell>
+                  <DataTable.Cell numeric> - </DataTable.Cell>
+                </DataTable.Row>
+
+                <DataTable.Row>
+                  <DataTable.Cell>Total Fat</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Total Fat (Saturated + Trans fats) (in g)"]} g</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Fat DV (in%)"]} %</DataTable.Cell>
+                </DataTable.Row>
+
+                <DataTable.Row>
+                  <DataTable.Cell>Dietary Fibre</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Fibre (in g)"]} g</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Fibre DV (in %)"]} %</DataTable.Cell>
+                </DataTable.Row>
+                <DataTable.Row>
+                  <DataTable.Cell>Sodium</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Sodium (in milligrams)"]} mg</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Sodium DV (in %)"]} %</DataTable.Cell>
+                </DataTable.Row>
+                <DataTable.Row>
+                  <DataTable.Cell>Cholsterol</DataTable.Cell>
+                  <DataTable.Cell numeric>{productNF["Cholesterol (in milligrams)"]} mg</DataTable.Cell>
+                  <DataTable.Cell numeric> - </DataTable.Cell>
+                </DataTable.Row>
+              </DataTable>
+
+              
+            </Modal>
           </View> : null
         }
       </View>
@@ -261,5 +356,13 @@ export default function TakePhoto(props) {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  productDetails: {
+    flex: 1,
+    alignItems: 'center'
+  },
+  productP: {
+    flex: 1,
+    alignItems: 'flex-start'
   }
   });
