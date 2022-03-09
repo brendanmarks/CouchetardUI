@@ -12,8 +12,8 @@ import { Appbar, Button, Modal, TouchableRipple, RadioButton, Checkbox } from 'r
 const {width, height} = Dimensions.get("window")
 
 // Get reference to bundled model assets 
-const modelJson = require('./assets/model/model_quantized.json');
-const modelWeights = require('./assets/model/group1-shard1of1_quantized.bin');
+const modelJson = require('./assets/model/model_int_quantized.json');
+const modelWeights = require('./assets/model/group1_int_quantized-shard1of1.bin');
 
 export default function App() {
   const [usingCamera, setUsingCamera] = useState(null);
@@ -35,7 +35,10 @@ export default function App() {
   const loadModel = async (src) => {
     try {
       // For graph model
+      const startTime = Date.now();
       const model = await tf.loadGraphModel(src);
+      const msElapsed = Date.now() - startTime;
+      console.log(`Model loading took ${msElapsed / 1000} seconds to complete.`);
       setModel(model);
       // Alert.alert('Model', `Load model success`)
     } catch (err) {
