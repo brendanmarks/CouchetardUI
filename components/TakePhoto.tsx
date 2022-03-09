@@ -35,28 +35,32 @@ export default function TakePhoto(props) {
   const [productPF, setProductPF] = useState(null);
   const [PopupTableVisible, setPopupTableVisible] = useState(null);
 
+  const [glutenFree, setGlutenFree] = useState(null);
+  const [lactoseFree, setLactoseFree] = useState(null);
+  const [peanutFree, setPeanutFree] = useState(null);
+  const [organicFree, setOrganicFree] = useState(null);
+  const [veganFree, setVeaganFree] = useState(null);
+
   const parseJson = () => {
 
     const pIndex = productsIndex[topItem]
-    
-    //console.log(products[pIndex][1]["Product Name"])
-    //console.log(products[pIndex][1]["Price CAD"])
-    //console.log(products[pIndex][2].NF)
-    //console.log(products[pIndex][3].PF)
-    
+
     setProductName(products[pIndex][1]["Product Name"])
     setProductPrice(products[pIndex][1]["Price CAD"])
     setProductNF(products[pIndex][2].NF)
     setProductPF(products[pIndex][3].PF)
-  }
 
-  const displayNutritionalFacts = () => {
-    return (
-      <View>
-        <Title>HELOOOOOOOOOO</Title>
-      </View>
-    )
-      
+    const peanutF = products[pIndex][3].PF["Labelled Peanut Free,"]
+    const glutenF = products[pIndex][3].PF["Labelled Gluten Free,"]
+    const veganF = products[pIndex][3].PF["Labelled Vegan,"]
+    const lactoseF = products[pIndex][3].PF["Labelled Lactose Free,Low Sodium (<= 5% Daily Value),"]
+    const organicF = products[pIndex][3].PF["Labelled Organic,"]
+    
+    setGlutenFree(glutenF)
+    setLactoseFree(lactoseF)
+    setPeanutFree(peanutF)
+    setOrganicFree(organicF)
+    setVeaganFree(veganF)
   }
 
   useEffect(() => {
@@ -263,6 +267,13 @@ export default function TakePhoto(props) {
           <View style={styles.productDetails}>
             <Title>{productName} </Title>
             <Title>Product Price : {productPrice} $</Title>
+
+            <ConditionalText label="This item is not lactose free" productRestriction={lactoseFree} userRestriction={props.dietaryRestrictions.Lactose} />            
+            <ConditionalText label="This item is not gluten free" productRestriction={glutenFree} userRestriction={props.dietaryRestrictions.Gluten} />
+            <ConditionalText label="This item is not peanut free" productRestriction={peanutFree} userRestriction={props.dietaryRestrictions.Peanut} />
+            <ConditionalText label="This item is not organic free" productRestriction={organicFree} userRestriction={props.dietaryRestrictions.Organic} />
+            <ConditionalText label="This item is not vegan free" productRestriction={veganFree} userRestriction={props.dietaryRestrictions.Vegan} />
+
             <Card style={{marginTop:30 , alignSelf: 'center', width: '75%', height: '30%'}}>
             <Card.Cover style={{alignSelf: 'center', width: '100%', height: '100%'}} resizeMode={'contain'} source={photo} />
             </Card>
@@ -323,6 +334,18 @@ export default function TakePhoto(props) {
         }
       </View>
     );
+    function ConditionalText({ label, userRestriction, productRestriction }) {
+      if (productRestriction === "No" && userRestriction == true) {
+        return (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ fontWeight: 'bold', color: 'red'}}>{label}</Text>
+          </View>
+        );
+      }
+      return (
+        <View></View>
+      );
+    }
   }
   const styles = StyleSheet.create({
     textCommand: {
