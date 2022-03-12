@@ -16,7 +16,7 @@ const productsIndex = require('../assets/data/productsToIndex.json');
 // Get reference to bundled model assets 
 const modelJson = require('../assets/model/model.json');
 const modelWeights = require('../assets/model/group1-shard1of1_quantized.bin');
-
+const {google} = require('googleapis')
 
 export default function TakePhoto(props) {
   const [hasPermission, setHasPermission] = useState(null);
@@ -40,6 +40,50 @@ export default function TakePhoto(props) {
   const [peanutFree, setPeanutFree] = useState(null);
   const [organicFree, setOrganicFree] = useState(null);
   const [veganFree, setVeaganFree] = useState(null);
+
+    // service account key file from Google Cloud console.
+  const KEYFILEPATH = 'assets/creds/visual-product-search-trip-281ae5184fee.json';
+
+  // Request full drive access.
+  const SCOPES = ['https://www.googleapis.com/auth/drive'];
+
+    // Create a service account initialize with the service account key file and scope needed
+  const auth = new google.auth.GoogleAuth({
+    keyFile: KEYFILEPATH,
+    scopes: SCOPES
+  });
+
+  async function uploadFile(auth){
+    const driveService = google.drive({version: 'v3', auth});
+    let fileMetadata = {
+      'name': 'test.txt'
+    };
+    let media = {
+      mimeType: 'text/plain',
+      body: 'test123'
+    };
+    let response = await driveService.files.create({
+      resource: fileMetadata,
+      media: media,
+      fields: 'id'
+    });
+    switch(response.status){
+      case 200:
+          let file = response.result;
+          console.log('Created File Id: ', response.data.id);
+          break;
+      default:
+          console.error('Error creating the file, ' + response.errors);
+          break;
+    }
+  }
+
+  const uploadImage = (uri) => {
+    const path = `${FileSystem.cacheDirectory}${uri}`
+    console.log(path)
+  }
+
+
 
   const parseJson = () => {
 
@@ -140,6 +184,8 @@ export default function TakePhoto(props) {
       // Get a reference to the bundled asset and convert it to a tensor
       // const image = require('../assets/images/1642370787.jpg');
       // const imageAssetPath = Image.resolveAssetSource(image);
+      uploadFile(auth)
+      uploadImage(photo.uri)
       const resizedImg = await resizeAndCrop(photo);
       // setPhoto(resizedImg)
       const response = await fetch(resizedImg.uri, {}, { isBinary: true });
